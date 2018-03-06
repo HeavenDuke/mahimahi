@@ -20,7 +20,7 @@
 
 using namespace std;
 
-// ÃüÁîĞĞ£ºmm-webrecord <directory>
+// command: mm-webrecord <directory>
 int main( int argc, char *argv[] )
 {
     try {
@@ -28,24 +28,24 @@ int main( int argc, char *argv[] )
         char **user_environment = environ;
         environ = nullptr;
 
-		// ¼ì²é»·¾³ÊÇ·ñÂú×ãÔËĞĞÒªÇó
+		// check
         check_requirements( argc, argv );
 
-		// ÅĞ¶¨ÊÇ·ñÖ¸¶¨ÁËrecordÂ·¾¶
+		// check length
         if ( argc < 2 ) {
             throw runtime_error( "Usage: " + string( argv[ 0 ] ) + " directory [command...]" );
         }
 
-		// ´ÓµÚ¶ş¸ö²ÎÊı»ñÈ¡µ½Â·¾¶
+		// ï¿½ÓµÚ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½Â·ï¿½ï¿½
         /* Make sure directory ends with '/' so we can prepend directory to file name for storage */
         string directory( argv[ 1 ] );
 
-		// ÅĞ¶ÏÂ·¾¶ÊÇ·ñ´æÔÚ
+		// ï¿½Ğ¶ï¿½Â·ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
         if ( directory.empty() ) {
             throw runtime_error( string( argv[ 0 ] ) + ": directory name must be non-empty" );
         }
 
-		// µ÷ÕûÂ·¾¶¸ñÊ½£¬ÒÔ¡°/¡±½áÎ²
+		// ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½Ô¡ï¿½/ï¿½ï¿½ï¿½ï¿½Î²
         if ( directory.back() != '/' ) {
             directory.append( "/" );
         }
@@ -53,10 +53,10 @@ int main( int argc, char *argv[] )
         /* what command will we run inside the container? */
         vector < string > command;
         if ( argc == 2 ) {
-			// Èç¹ûÃ»ÓĞ¸½¼ÓÖ¸Áî£¬ÔòÖ±½Ó´ò¿ªÒ»¸öShell
+			// ï¿½ï¿½ï¿½Ã»ï¿½Ğ¸ï¿½ï¿½ï¿½Ö¸ï¿½î£¬ï¿½ï¿½Ö±ï¿½Ó´ï¿½Ò»ï¿½ï¿½Shell
             command.push_back( shell_path() );
         } else {
-			// Èç¹ûÓĞ¸½¼ÓÖ¸Áî£¬Ôò°ÑÕâĞ©¸½¼ÓÖ¸Áî¼ÓÈëµ½ÃüÁî¼¯Àï
+			// ï¿½ï¿½ï¿½ï¿½Ğ¸ï¿½ï¿½ï¿½Ö¸ï¿½î£¬ï¿½ï¿½ï¿½ï¿½ï¿½Ğ©ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ëµ½ï¿½ï¿½ï¿½î¼¯ï¿½ï¿½
             for ( int i = 2; i < argc; i++ ) {
                 command.push_back( argv[ i ] );
             }
@@ -65,14 +65,18 @@ int main( int argc, char *argv[] )
         const Address nameserver = first_nameserver();
 
         /* set egress and ingress ip addresses */
-		// egress_addr£ºÀë¿ªµÄµØÖ·
-		// ingress_addr£º½øÈëµÄµØÖ·
+		// egress_addrï¿½ï¿½ï¿½ë¿ªï¿½Äµï¿½Ö·
+		// ingress_addrï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½Ö·
         Address egress_addr, ingress_addr;
+
         tie( egress_addr, ingress_addr ) = two_unassigned_addresses();
+
+        cout << egress_addr.str() << endl;
+        cout << ingress_addr.str() << endl;
 
         /* make pair of devices */
         string egress_name = "veth-" + to_string( getpid() ), ingress_name = "veth-i" + to_string( getpid() );
-        // ¹¹ÔìÒ»¶ÔĞéÄâÒÔÌ«Íø
+        // ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì«ï¿½ï¿½
 		VirtualEthernetPair veth_devices( egress_name, ingress_name );
 
         /* bring up egress */
@@ -88,6 +92,7 @@ int main( int argc, char *argv[] )
         HTTPProxy http_proxy( egress_addr );
 
         /* set up dnat */
+        cout << http_proxy.tcp_listener().local_address().str() << endl;
         DNAT dnat( http_proxy.tcp_listener().local_address(), egress_name );
 
         /* prepare event loop */
