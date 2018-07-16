@@ -17,6 +17,9 @@ WebServer::WebServer( const Address & addr, const string & working_directory, co
     : config_file_( "/tmp/replayshell_apache_config" ),
       moved_away_( false )
 {
+
+    /* write our own forward proxy here! */
+
     config_file_.write( apache_main_config );
 
     config_file_.write( "WorkingDir " + working_directory + "\n" );

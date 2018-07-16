@@ -9,6 +9,7 @@
 #include "util.hh"
 #include "netdevice.hh"
 #include "web_server.hh"
+#include "proxy_server.hh"
 #include "system_runner.hh"
 #include "socket.hh"
 #include "event_loop.hh"
@@ -23,14 +24,15 @@
 
 using namespace std;
 
-void add_dummy_interface( const string & name, const Address & addr )
-{
-    run( { IP, "link", "add", name, "type", "dummy" } );
+void add_dummy_interface( const string & name, const Address & addr ) {
+    run({IP, "link", "add", name, "type", "dummy"});
 
-    interface_ioctl( SIOCSIFFLAGS, name,
-                     [] ( ifreq &ifr ) { ifr.ifr_flags = IFF_UP; } );
-    interface_ioctl( SIOCSIFADDR, name,
-                     [&] ( ifreq &ifr ) { ifr.ifr_addr = addr.to_sockaddr(); } );
+    cout << "IP Command: " << join({IP, "link", "add", name, "type", "dummy"}) << endl;
+
+    interface_ioctl(SIOCSIFFLAGS, name,
+                    [](ifreq &ifr) { ifr.ifr_flags = IFF_UP; });
+    interface_ioctl(SIOCSIFADDR, name,
+                    [&](ifreq &ifr) { ifr.ifr_addr = addr.to_sockaddr(); });
 }
 
 int main( int argc, char *argv[] )
@@ -60,6 +62,8 @@ int main( int argc, char *argv[] )
 
         /* get working directory */
         const string working_directory { get_working_directory() };
+
+        cout << "Working directory: " << working_directory << endl;
 
         /* chdir to result of getcwd just in case */
         SystemCall( "chdir", chdir( working_directory.c_str() ) );
@@ -99,6 +103,7 @@ int main( int argc, char *argv[] )
                 FileDescriptor fd( SystemCall( "open", open( filename.c_str(), O_RDONLY ) ) );
 
                 MahimahiProtobufs::RequestResponse protobuf;
+
                 if ( not protobuf.ParseFromFileDescriptor( fd.fd_num() ) ) {
                     throw runtime_error( filename + ": invalid HTTP request/response" );
                 }
@@ -116,7 +121,7 @@ int main( int argc, char *argv[] )
         /* set up dummy interfaces */
         unsigned int interface_counter = 0;
         for ( const auto ip : unique_ip ) {
-            add_dummy_interface( "sharded" + to_string( interface_counter ), ip );
+            add_dummy_interface("sharded" + to_string(interface_counter), ip);
             interface_counter++;
         }
 
@@ -126,11 +131,29 @@ int main( int argc, char *argv[] )
             servers.emplace_back( ip_port, working_directory, directory );
         }
 
+        Address frontend_address = Address("127.0.0.1", "80");
+        ProxyServer frontend_server(frontend_address);
+
+        Address frontend_address_tls = Address("127.0.0.1", "443");
+        ProxyServer frontend_server_tls(frontend_address_tls);
+
         /* set up DNS server */
         TempFile dnsmasq_hosts( "/tmp/replayshell_hosts" );
         for ( const auto mapping : hostname_to_ip ) {
-            dnsmasq_hosts.write( mapping.second.ip() + " " + mapping.first + "\n" );
+            cout << "DNS Mapping Rule: " << mapping.second.ip() << " to " << mapping.first << endl;
+//            dnsmasq_hosts.write( mapping.second.ip() + " " + mapping.first + "\n" );
+            dnsmasq_hosts.write( frontend_address.ip() + " " + mapping.first + "\n" );
+            if (mapping.second.port() == 443) {
+                frontend_server_tls.add_front_back_mapping(mapping.first, mapping.second);
+            }
+            else {
+                frontend_server.add_front_back_mapping(mapping.first, mapping.second);
+            }
         }
+
+        frontend_server.Run();
+        cout << endl;
+//        frontend_server_tls.Run();
 
         /* initialize event loop */
         EventLoop event_loop;
@@ -143,6 +166,8 @@ int main( int argc, char *argv[] )
             const string interface_name = "nameserver" + to_string( server_num );
             add_dummy_interface( interface_name, nameservers.at( server_num ) );
         }
+
+        cout << "dnsmasq args: " << join(dnsmasq_args) << endl;
 
         /* start dnsmasq */
         event_loop.add_child_process( start_dnsmasq( dnsmasq_args ) );

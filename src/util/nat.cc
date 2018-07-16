@@ -5,7 +5,7 @@
 
    We mark the connections on entry from the ingress address (with our PID),
    and then look for the mark on output. */
-
+#include <iostream>
 #include <unistd.h>
 
 #include "nat.hh"
@@ -19,6 +19,11 @@ NATRule::NATRule( const vector< string > & s_args )
 {
     vector< string > command = { IPTABLES, "-w", "-t", "nat", "-A" };
     command.insert( command.end(), arguments.begin(), arguments.end() );
+    cout << "NAT Rule:";
+    for(unsigned int i = 0; i < command.size(); i++) {
+         cout << " " << command[i];
+    }
+    cout << endl;
     run( command );
 }
 
