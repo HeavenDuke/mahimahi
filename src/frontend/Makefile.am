@@ -32,7 +32,7 @@ mm_webrecord_LDADD = -lrt ../httpserver/libhttpserver.a ../http/libhttp.a ../pro
 mm_webrecord_LDFLAGS = -pthread
 
 bin_PROGRAMS += mm-webreplay
-mm_webreplay_SOURCES = replayshell.cc web_server.hh web_server.cc
+mm_webreplay_SOURCES = replayshell.cc web_server.hh web_server.cc proxy_server.hh proxy_server.cc
 mm_webreplay_LDADD = -lrt ../util/libutil.a ../http/libhttp.a ../protobufs/libhttprecordprotos.a $(protobuf_LIBS)
 mm_webreplay_LDFLAGS = -pthread
 

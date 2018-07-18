@@ -40,6 +40,13 @@ if test "$APACHE2" = "no"; then
 fi
 AC_DEFINE_UNQUOTED([APACHE2], ["$APACHE2"], [path to apache2])
 
+AC_ARG_VAR([NGHTTPX], [path to nghttpx])
+AC_PATH_PROGS([NGHTTPX], [nghttpx], [no], [$PATH$PATH_SEPARATOR/sbin$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/bin$PATH_SEPARATOR/usr/bin$PATH_SEPARATOR/usr/local/bin])
+if test "$NGHTTPX" = "no"; then
+  AC_MSG_ERROR([nghttpx is required])
+fi
+AC_DEFINE_UNQUOTED([NGHTTPX], ["$NGHTTPX"], [path to nghttpx])
+
 AC_ARG_VAR([DNSMASQ], [path to dnsmasq])
 AC_PATH_PROG([DNSMASQ], [dnsmasq], [no], [$PATH$PATH_SEPARATOR/sbin$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/bin$PATH_SEPARATOR/usr/bin])
 if test "$DNSMASQ" = "no"; then
