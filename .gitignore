@@ -42,3 +42,5 @@ Makefile.in
 
 .vs
 CppProperties.json
+
+.idea

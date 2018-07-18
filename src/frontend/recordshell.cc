@@ -71,15 +71,8 @@ int main( int argc, char *argv[] )
 
         tie( egress_addr, ingress_addr ) = two_unassigned_addresses();
 
-        cout << "engress address: " << egress_addr.str() << endl;
-
-        cout << "ingress address: " << ingress_addr.str() << endl;
-
         /* make pair of devices */
         string egress_name = "veth-" + to_string( getpid() ), ingress_name = "veth-i" + to_string( getpid() );
-
-        cout << "egress name: " << egress_name << endl;
-        cout << "ingress name: " << ingress_name << endl;
 
         // Create Virtual Ethernet device
 		VirtualEthernetPair veth_devices( egress_name, ingress_name );
@@ -97,8 +90,6 @@ int main( int argc, char *argv[] )
         HTTPProxy http_proxy( egress_addr );
 
         /* set up dnat */
-        cout << "HTTP Proxy Address: " << http_proxy.tcp_listener().local_address().str() << endl;
-
         DNAT dnat( http_proxy.tcp_listener().local_address(), egress_name );
 
         /* prepare event loop */

@@ -47,6 +47,18 @@ if test "$NGHTTPX" = "no"; then
 fi
 AC_DEFINE_UNQUOTED([NGHTTPX], ["$NGHTTPX"], [path to nghttpx])
 
+AC_ARG_VAR([KILL], [path to kill])
+AC_PATH_PROGS([KILL], [kill], [no], [$PATH$PATH_SEPARATOR/sbin$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/bin$PATH_SEPARATOR/usr/bin])
+AC_DEFINE_UNQUOTED([KILL], ["$KILL"], [path to kill])
+
+AC_ARG_VAR([CAT], [path to cat])
+AC_PATH_PROGS([CAT], [cat], [no], [$PATH$PATH_SEPARATOR/sbin$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/bin$PATH_SEPARATOR/usr/bin])
+AC_DEFINE_UNQUOTED([CAT], ["$CAT"], [path to cat])
+
+AC_ARG_VAR([XARGS], [path to xargs])
+AC_PATH_PROGS([XARGS], [xargs], [no], [$PATH$PATH_SEPARATOR/sbin$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/bin$PATH_SEPARATOR/usr/bin])
+AC_DEFINE_UNQUOTED([XARGS], ["$XARGS"], [path to xargs])
+
 AC_ARG_VAR([DNSMASQ], [path to dnsmasq])
 AC_PATH_PROG([DNSMASQ], [dnsmasq], [no], [$PATH$PATH_SEPARATOR/sbin$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/bin$PATH_SEPARATOR/usr/bin])
 if test "$DNSMASQ" = "no"; then

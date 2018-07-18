@@ -2,6 +2,7 @@
 
 #include <string>
 #include <iostream>
+#include <cstdlib>
 #include <unistd.h>
 
 #include "proxy_server.hh"
@@ -21,11 +22,7 @@ ProxyServer::ProxyServer(const Address &address): fbmap(), frontend(address)
 
 ProxyServer::~ProxyServer()
 {
-//    try {
-//        run( { APACHE2, "-f", config_file_.name(), "-k", "graceful-stop" } );
-//    } catch ( const exception & e ) { /* don't throw from destructor */
-//        print_exception( e );
-//    }
+    // TODO: Stop current nghttpx server here
 }
 
 void ProxyServer::Run()
@@ -41,6 +38,7 @@ void ProxyServer::Run()
     commands.push_back("-b");
     commands.push_back("127.0.0.1,3128");
     commands.push_back("--no-via");
+    commands.push_back("--pid-file=/tmp/nghttpx.pid");
     commands.push_back("-D");
     int count = commands.size();
     cout << "Command:";
