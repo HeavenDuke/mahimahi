@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <unistd.h>
+#include <fstream>
 
 #include "proxy_server.hh"
 #include "apache_configuration.hh"
@@ -14,7 +15,10 @@
 
 using namespace std;
 
-ProxyServer::ProxyServer(const Address &address): fbmap(), frontend(address)
+ProxyServer::ProxyServer(const Address &address):
+    fbmap(),
+    frontend(address),
+    pid_file("/tmp/nghttpx.pid")
 {
 //    frontend = address;
 //    fbmap = map<string, Address>();
@@ -22,7 +26,7 @@ ProxyServer::ProxyServer(const Address &address): fbmap(), frontend(address)
 
 ProxyServer::~ProxyServer()
 {
-    // TODO: Stop current nghttpx server here
+
 }
 
 void ProxyServer::Run()
@@ -38,7 +42,7 @@ void ProxyServer::Run()
     commands.push_back("-b");
     commands.push_back("127.0.0.1,3128");
     commands.push_back("--no-via");
-    commands.push_back("--pid-file=/tmp/nghttpx.pid");
+    commands.push_back("--pid-file=" + pid_file);
     commands.push_back("-D");
     int count = commands.size();
     cout << "Command:";
@@ -50,7 +54,26 @@ void ProxyServer::Run()
     run(commands);
 }
 
+void ProxyServer::Stop()
+{
+    // TODO: Stop current nghttpx server here
+    string pid;
+    ifstream pidIn(pid_file);
+    pidIn >> pid;
+    vector<string> commands;
+    commands.push_back(KILL);
+    commands.push_back("-SIGTERM");
+    commands.push_back(pid);
+    cout << "Stop nghttpx:";
+    for(auto w: commands) {
+        cout << " " << w;
+    }
+    cout << endl;
+    run(commands);
+}
+
 void ProxyServer::add_front_back_mapping(const string &host, const Address &backend)
 {
     fbmap.insert(map<string, Address>::value_type (host, backend));
 }
+

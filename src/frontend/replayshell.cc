@@ -183,7 +183,9 @@ int main( int argc, char *argv[] )
                 return ezexec( command, true );
         } );
 
-        return event_loop.loop();
+        int ret = event_loop.loop();
+        frontend_server.Stop();
+        return ret;
     } catch ( const exception & e ) {
         print_exception( e );
         return EXIT_FAILURE;

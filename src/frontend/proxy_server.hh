@@ -14,12 +14,14 @@ class ProxyServer
 private:
     map<string, Address> fbmap;
     Address frontend;
+    const string pid_file;
 
 public:
     ProxyServer(const Address & addr);
     ~ProxyServer();
 
     void Run();
+    void Stop();
     void add_front_back_mapping(const string &host, const Address &backend);
 
 };
