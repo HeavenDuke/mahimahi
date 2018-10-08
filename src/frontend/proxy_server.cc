@@ -15,65 +15,47 @@
 
 using namespace std;
 
-ProxyServer::ProxyServer(const Address &address):
-    fbmap(),
-    frontend(address),
-    pid_file("/tmp/nghttpx.pid")
-{
-//    frontend = address;
-//    fbmap = map<string, Address>();
-}
+ProxyServer::ProxyServer(const Address &_frontend, const Address &_backend) :
+        frontend(_frontend),
+        backend(_backend),
+        config_file_("/tmp/replayshell_nghttpx_config"),
+        pid_file_("/tmp/replayshell_nghttpx_pid_" + to_string(getpid()) + "." + to_string(random())),
+        moved_away_(false) {
+    config_file_.write("frontend=" + frontend.str(",") + (frontend.port() == 443 ? "" : ";no-tls") + "\n");
 
-ProxyServer::~ProxyServer()
-{
+    config_file_.write("backend=" + backend.str(",") + (frontend.port() == 443 ? ";;tls" : "") + "\n");
 
-}
+    config_file_.write("pid-file=" + pid_file_ + "\n");
 
-void ProxyServer::Run()
-{
-    vector<string> commands;
-    commands.push_back(NGHTTPX);
-    commands.push_back("-f");
-    commands.push_back(frontend.str(",") + (frontend.port() == 80 ? ";no-tls" : ""));
-    for(map<string, Address>::iterator iter = fbmap.begin(); iter != fbmap.end(); iter++) {
-        commands.push_back("-b");
-        commands.push_back(iter->second.str(",") + ";" + iter->first + ";dns");
+    config_file_.write("accesslog-file=/var/log/nghttpx/access.log\n");
+
+    config_file_.write("errorlog-file=/var/log/nghttpx/error.log\n");
+
+    // Enable TLS configuration
+    if (frontend.port() == 443) {
+        config_file_.write(proxy_ssl_config);
     }
-    commands.push_back("-b");
-    commands.push_back("127.0.0.1,3128");
-    commands.push_back("--no-via");
-    commands.push_back("--pid-file=" + pid_file);
-    commands.push_back("-D");
-    int count = commands.size();
-    cout << "Command:";
-    for (int i = 0; i < count;i++)
-    {
-        cout << " " << commands[i];
-    }
-    cout << endl;
-    run(commands);
+
+    run({NGHTTPX, "-D", "-k", "--conf", config_file_.name()});
 }
 
-void ProxyServer::Stop()
-{
-    // TODO: Stop current nghttpx server here
+ProxyServer::~ProxyServer() {
+    if (moved_away_) { return; }
     string pid;
-    ifstream pidIn(pid_file);
+    ifstream pidIn(pid_file_);
     pidIn >> pid;
-    vector<string> commands;
-    commands.push_back(KILL);
-    commands.push_back("-SIGTERM");
-    commands.push_back(pid);
-    cout << "Stop nghttpx:";
-    for(auto w: commands) {
-        cout << " " << w;
+    try {
+        run({KILL, "-SIGQUIT", pid});
+    } catch (const exception &e) { /* don't throw from destructor */
+        print_exception(e);
     }
-    cout << endl;
-    run(commands);
 }
 
-void ProxyServer::add_front_back_mapping(const string &host, const Address &backend)
-{
-    fbmap.insert(map<string, Address>::value_type (host, backend));
+ProxyServer::ProxyServer(ProxyServer &&other)
+        : frontend(other.frontend),
+          backend(other.backend),
+          config_file_(move(other.config_file_)),
+          pid_file_(other.pid_file_),
+          moved_away_(false) {
+    other.moved_away_ = true;
 }
-

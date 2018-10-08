@@ -4,7 +4,8 @@
 #define PROXY_SERVER_HH
 
 #include <string>
-#include <map>
+
+#include "temp_file.hh"
 #include "address.hh"
 
 using namespace std;
@@ -12,18 +13,23 @@ using namespace std;
 class ProxyServer
 {
 private:
-    map<string, Address> fbmap;
-    Address frontend;
-    const string pid_file;
-
+    Address frontend, backend;
+    TempFile config_file_;
+    string pid_file_;
+    bool moved_away_;
 public:
-    ProxyServer(const Address & addr);
+    ProxyServer(const Address &frontend, const Address &backend);
     ~ProxyServer();
 
-    void Run();
-    void Stop();
-    void add_front_back_mapping(const string &host, const Address &backend);
+    /* ban copying */
+    ProxyServer( const ProxyServer & other ) = delete;
+    ProxyServer & operator=( const ProxyServer & other ) = delete;
 
+    /* allow move constructor */
+    ProxyServer( ProxyServer && other );
+
+    /* ... but not move assignment operator */
+    ProxyServer & operator=( ProxyServer && other ) = delete;
 };
 
 #endif

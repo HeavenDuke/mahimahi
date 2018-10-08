@@ -11,4 +11,6 @@ const std::string apache_main_config = "LoadModule mpm_prefork_module " + std::s
 
 const std::string apache_ssl_config = "LoadModule ssl_module " + std::string( MOD_SSL ) + "\nSSLEngine on\nSSLCertificateFile      " + std::string( MOD_SSL_CERTIFICATE_FILE ) + "\nSSLCertificateKeyFile " + std::string( MOD_SSL_KEY ) +"\n";
 
+const std::string proxy_ssl_config = "no-ocsp=yes\nprivate-key-file=" + std::string( MOD_SSL_KEY ) + "\ncertificate-file=" + std::string( MOD_SSL_CERTIFICATE_FILE ) + "\n";
+
 #endif /* APACHE_CONFIGURATION_HH */

@@ -127,33 +127,20 @@ int main( int argc, char *argv[] )
 
         /* set up web servers */
         vector< WebServer > servers;
+        vector< ProxyServer > proxies;
         for ( const auto ip_port : unique_ip_and_port ) {
-            servers.emplace_back( ip_port, working_directory, directory );
+            Address frontend_address = ip_port;
+            Address backend_address = Address(frontend_address.ip(), frontend_address.port() + 15000);
+            servers.emplace_back( backend_address, working_directory, directory );
+            proxies.emplace_back(frontend_address, backend_address);
         }
-
-        Address frontend_address = Address("127.0.0.1", "80");
-        ProxyServer frontend_server(frontend_address);
-
-        Address frontend_address_tls = Address("127.0.0.1", "443");
-        ProxyServer frontend_server_tls(frontend_address_tls);
 
         /* set up DNS server */
         TempFile dnsmasq_hosts( "/tmp/replayshell_hosts" );
         for ( const auto mapping : hostname_to_ip ) {
             cout << "DNS Mapping Rule: " << mapping.second.ip() << " to " << mapping.first << endl;
-//            dnsmasq_hosts.write( mapping.second.ip() + " " + mapping.first + "\n" );
-            dnsmasq_hosts.write( frontend_address.ip() + " " + mapping.first + "\n" );
-            if (mapping.second.port() == 443) {
-                frontend_server_tls.add_front_back_mapping(mapping.first, mapping.second);
-            }
-            else {
-                frontend_server.add_front_back_mapping(mapping.first, mapping.second);
-            }
+            dnsmasq_hosts.write( mapping.second.ip() + " " + mapping.first + "\n" );
         }
-
-        frontend_server.Run();
-        cout << endl;
-//        frontend_server_tls.Run();
 
         /* initialize event loop */
         EventLoop event_loop;
@@ -184,7 +171,6 @@ int main( int argc, char *argv[] )
         } );
 
         int ret = event_loop.loop();
-        frontend_server.Stop();
         return ret;
     } catch ( const exception & e ) {
         print_exception( e );

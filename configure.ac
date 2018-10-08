@@ -97,6 +97,8 @@ AC_CHECK_FILE([/etc/ssl/certs/ssl-cert-snakeoil.pem], [],
 
 AC_DEFINE_UNQUOTED([MOD_SSL_CERTIFICATE_FILE], ["/etc/ssl/certs/ssl-cert-snakeoil.pem"], [path to ssl certificate file])
 
+AC_DEFINE_UNQUOTED([MOD_SSL_CERTIFICATE_FILE_CRT], ["/etc/ssl/certs/ssl-cert-snakeoil.crt"], [path to ssl certificate file in crt format])
+
 AC_DEFINE_UNQUOTED([MOD_SSL_KEY], ["/etc/ssl/private/ssl-cert-snakeoil.key"], [path to ssl key])
 
 # Set path to mm-replayserver script
