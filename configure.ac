@@ -83,6 +83,10 @@ AC_CHECK_FILE([$APACHE2_MODULE_DIR/mod_mpm_prefork.so],
 	      [AC_DEFINE_UNQUOTED([MOD_MPM_PREFORK], ["$APACHE2_MODULE_DIR/mod_mpm_prefork.so"], [mod_prefork.so])],
               [AC_MSG_ERROR([apache2 mod_mpm_prefork.so is required])])
 
+AC_CHECK_FILE([$APACHE2_MODULE_DIR/mod_headers.so],
+	      [AC_DEFINE_UNQUOTED([MOD_HEADERS], ["$APACHE2_MODULE_DIR/mod_headers.so"], [mod_headers.so])],
+              [AC_MSG_ERROR([apache2 mod_headers.so is required])])
+
 AC_CHECK_FILE([$APACHE2_MODULE_DIR/mod_authz_core.so],
 	      [AC_DEFINE_UNQUOTED([MOD_AUTHZ_CORE], ["$APACHE2_MODULE_DIR/mod_authz_core.so"], [mod_authz_core.so])],
               [AC_MSG_ERROR([apache2 mod_authz_core.so is required])])

@@ -46,7 +46,9 @@ WebServer::WebServer(const Address &addr, const string &working_directory, const
 
     config_file_.write("Group #" + to_string(getgid()) + "\n");
 
-    config_file_.write("Listen " + addr.str());
+    config_file_.write("Listen " + addr.str() + "\n");
+
+    config_file_.write("Header always set myheader \"23333\"");
 
     run({APACHE2, "-f", config_file_.name(), "-k", "start"});
 }
