@@ -27,8 +27,6 @@ using namespace std;
 void add_dummy_interface( const string & name, const Address & addr ) {
     run({IP, "link", "add", name, "type", "dummy"});
 
-    cout << "IP Command: " << join({IP, "link", "add", name, "type", "dummy"}) << endl;
-
     interface_ioctl(SIOCSIFFLAGS, name,
                     [](ifreq &ifr) { ifr.ifr_flags = IFF_UP; });
     interface_ioctl(SIOCSIFADDR, name,
@@ -62,8 +60,6 @@ int main( int argc, char *argv[] )
 
         /* get working directory */
         const string working_directory { get_working_directory() };
-
-        cout << "Working directory: " << working_directory << endl;
 
         /* chdir to result of getcwd just in case */
         SystemCall( "chdir", chdir( working_directory.c_str() ) );
@@ -138,7 +134,7 @@ int main( int argc, char *argv[] )
         /* set up DNS server */
         TempFile dnsmasq_hosts( "/tmp/replayshell_hosts" );
         for ( const auto mapping : hostname_to_ip ) {
-            cout << "DNS Mapping Rule: " << mapping.second.ip() << " to " << mapping.first << endl;
+//            cout << "DNS Mapping Rule: " << mapping.second.ip() << " to " << mapping.first << endl;
             dnsmasq_hosts.write( mapping.second.ip() + " " + mapping.first + "\n" );
         }
 
@@ -153,8 +149,6 @@ int main( int argc, char *argv[] )
             const string interface_name = "nameserver" + to_string( server_num );
             add_dummy_interface( interface_name, nameservers.at( server_num ) );
         }
-
-        cout << "dnsmasq args: " << join(dnsmasq_args) << endl;
 
         /* start dnsmasq */
         event_loop.add_child_process( start_dnsmasq( dnsmasq_args ) );

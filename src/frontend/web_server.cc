@@ -34,6 +34,10 @@ WebServer::WebServer(const Address &addr, const string &working_directory, const
     /* Apache will check if this file exists before clobbering it,
        so we think it's ok for Apache to write here as root */
 
+    config_file_.write("PushedResource /img/bd_logo1.png\n");
+    config_file_.write("PushedResource /img/baidu_jgylogo3.gif\n");
+    config_file_.write("PushedResource /5eN1bjq8AAUYm2zgoY3K/r/www/cache/static/protocol/https/home/js/nu_instant_search_86ee413.js\n");
+
     config_file_.write("ServerName mahimahi.\n");
 
     config_file_.write("ErrorLog /var/log/apache2/error.log\n");
@@ -47,8 +51,6 @@ WebServer::WebServer(const Address &addr, const string &working_directory, const
     config_file_.write("Group #" + to_string(getgid()) + "\n");
 
     config_file_.write("Listen " + addr.str() + "\n");
-
-    config_file_.write("Header always set myheader \"23333\"");
 
     run({APACHE2, "-f", config_file_.name(), "-k", "start"});
 }

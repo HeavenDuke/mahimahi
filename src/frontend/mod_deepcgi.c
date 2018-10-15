@@ -1,10 +1,15 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "httpd.h"
 #include "http_core.h"
 #include "http_protocol.h"
 
+#define MAX_RESOURCE 1001
+
 extern const char *replayserver_filename;
+static int resources_count = 0;
 
 static void deepcgi_hooks(apr_pool_t *inpPool);
 
@@ -13,6 +18,7 @@ static int deepcgi_handler(request_rec *inpRequest);
 typedef struct {
     const char *working_dir;
     const char *recording_dir;
+    const char *pushed_resources[MAX_RESOURCE];
 } deepcgi_config;
 
 static deepcgi_config config;
@@ -31,6 +37,21 @@ const char *deepcgi_set_recordingdir(cmd_parms *cmd, void *cfg, const char *arg)
     return NULL;
 }
 
+const char *deepcgi_set_pushresource(cmd_parms *cmd, void *cfg, const char *arg) {
+    config.pushed_resources[resources_count++] = arg;
+    return NULL;
+}
+
+char* set_push_headers(char* dest) {
+    strcpy(dest, "");
+    for(int i = 0; i < resources_count; i++) {
+        strcat(dest, "Link: <");
+        strcat(dest, config.pushed_resources[i]);
+        strcat(dest, ">; rel=preload\r\n");
+    }
+    return dest;
+}
+
 // ============================================================================
 // Directives to read configuration parameters
 // ============================================================================
@@ -39,6 +60,7 @@ static const command_rec deepcgi_directives[] =
         {
                 AP_INIT_TAKE1("workingDir", deepcgi_set_workingdir, NULL, RSRC_CONF, "Working directory"),
                 AP_INIT_TAKE1("recordingDir", deepcgi_set_recordingdir, NULL, RSRC_CONF, "Recording directory"),
+                AP_INIT_TAKE1("pushedResource", deepcgi_set_pushresource, NULL, RSRC_CONF, "Resource used for server push"),
                 {NULL}
         };
 
@@ -61,6 +83,16 @@ deepcgi_module =
 // ============================================================================
 // Module handler function
 // ============================================================================
+
+
+char* rand_s(char* container, int len) {
+    char* alphabet = "QAZWSXEDCRFVTGBYHNUJMIKLOP1234567890", len_a = 36;
+    for (int i = 0; i < len; i++) {
+        container[i] = alphabet[rand() % len_a];
+    }
+    container[len] = '\0';
+    return container;
+}
 
 int deepcgi_handler(request_rec *inpRequest) {
     if (!inpRequest->handler || strcmp(inpRequest->handler, "deepcgi-handler")) {
@@ -96,37 +128,109 @@ int deepcgi_handler(request_rec *inpRequest) {
         }
     }
 
+//    char randomstr[10] = "";
+//    char filename[100] = "/home/heavenduke/test.log.";
     FILE *fp = popen(replayserver_filename, "r");
+//    FILE *lg = fopen(filename, "w");
+//    FILE *lg = fopen(strcat(filename, rand_s(randomstr, 5)), "w");
+
     if (fp == NULL) {
         // "Error encountered while running script"
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    char line[HUGE_STRING_LEN];
-    struct ap_filter_t *cur;
+    char line[HUGE_STRING_LEN], buffer[HUGE_STRING_LEN * 10];
+    struct ap_filter_t *cur, *start;
+    char replacement[HUGE_STRING_LEN * 10] = "";
+
+    set_push_headers(replacement);
 
     // Get rid of all filters up through protocol...since we
     // haven't parsed off the headers, there is no way they can
     // work
     cur = inpRequest->proto_output_filters;
+    start = inpRequest->proto_output_filters;
     while (cur && cur->frec->ftype < AP_FTYPE_CONNECTION) {
         cur = cur->next;
     }
     inpRequest->output_filters = inpRequest->proto_output_filters = cur;
 
     // Write headers + body
-    int num_bytes_read;
+    int num_bytes_read, len = strlen(replacement), inserted = 0;
     do {
         num_bytes_read = fread(line, sizeof(char), HUGE_STRING_LEN, fp);
-        int num_bytes_left = num_bytes_read;
-        while (num_bytes_left > 0) {
-            int offset = num_bytes_read - num_bytes_left;
-            int num_bytes_written = ap_rwrite(line + offset, num_bytes_left, inpRequest);
-            if (num_bytes_written == -1) {
-                // "Error encountered while writing"
-                return HTTP_INTERNAL_SERVER_ERROR;
+        if (inserted == 0) {
+            char* result = strstr(line, "\r\n\r\n");
+            if (result != NULL) {
+                // write data before inserted data
+                int num_bytes = result - line + 2;
+                int num_bytes_left = num_bytes;
+                while (num_bytes_left > 0) {
+                    int offset = num_bytes - num_bytes_left;
+                    int num_bytes_written = ap_rwrite(line + offset, num_bytes_left, inpRequest);
+                    if (num_bytes_written == -1) {
+                        // "Error encountered while writing"
+                        return HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                    num_bytes_left -= num_bytes_written;
+                }
+//                for(int i = 0; i < num_bytes; i++) {
+//                    fprintf(lg, "%c", line[i]);
+//                }
+                // write inserted headers
+                num_bytes_left = len;
+                while (num_bytes_left > 0) {
+                    int offset = len - num_bytes_left;
+                    int num_bytes_written = ap_rwrite(replacement + offset, num_bytes_left, inpRequest);
+                    if (num_bytes_written == -1) {
+                        // "Error encountered while writing"
+                        return HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                    num_bytes_left -= num_bytes_written;
+                }
+//                fprintf(lg, "%s", replacement);
+                // write data after inserted data
+                num_bytes_left = num_bytes_read - num_bytes;
+                while (num_bytes_left > 0) {
+                    int offset = num_bytes_read - num_bytes_left;
+                    int num_bytes_written = ap_rwrite(line + offset, num_bytes_left, inpRequest);
+                    if (num_bytes_written == -1) {
+                        // "Error encountered while writing"
+                        return HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                    num_bytes_left -= num_bytes_written;
+                }
+//                for(int i = num_bytes; i < num_bytes_read; i++) {
+//                    fprintf(lg, "%c", line[i]);
+//                }
+                inserted = 1;
             }
-            num_bytes_left -= num_bytes_written;
+            else {
+                int num_bytes_left = num_bytes_read;
+                while (num_bytes_left > 0) {
+                    int offset = num_bytes_read - num_bytes_left;
+                    int num_bytes_written = ap_rwrite(line + offset, num_bytes_left, inpRequest);
+                    if (num_bytes_written == -1) {
+                        // "Error encountered while writing"
+                        return HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                    num_bytes_left -= num_bytes_written;
+                }
+//                fprintf(lg, "%s", line);
+            }
+        }
+        else {
+            int num_bytes_left = num_bytes_read;
+            while (num_bytes_left > 0) {
+                int offset = num_bytes_read - num_bytes_left;
+                int num_bytes_written = ap_rwrite(line + offset, num_bytes_left, inpRequest);
+                if (num_bytes_written == -1) {
+                    // "Error encountered while writing"
+                    return HTTP_INTERNAL_SERVER_ERROR;
+                }
+                num_bytes_left -= num_bytes_written;
+            }
+//            fprintf(lg, "%s", line);
         }
     } while (num_bytes_read == HUGE_STRING_LEN);
 
@@ -134,6 +238,7 @@ int deepcgi_handler(request_rec *inpRequest) {
     ap_set_keepalive(inpRequest);
 
     pclose(fp);
+//    pclose(lg);
 
     return OK;
 }
