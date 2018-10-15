@@ -128,11 +128,7 @@ int deepcgi_handler(request_rec *inpRequest) {
         }
     }
 
-//    char randomstr[10] = "";
-//    char filename[100] = "/home/heavenduke/test.log.";
     FILE *fp = popen(replayserver_filename, "r");
-//    FILE *lg = fopen(filename, "w");
-//    FILE *lg = fopen(strcat(filename, rand_s(randomstr, 5)), "w");
 
     if (fp == NULL) {
         // "Error encountered while running script"
@@ -174,9 +170,6 @@ int deepcgi_handler(request_rec *inpRequest) {
                     }
                     num_bytes_left -= num_bytes_written;
                 }
-//                for(int i = 0; i < num_bytes; i++) {
-//                    fprintf(lg, "%c", line[i]);
-//                }
                 // write inserted headers
                 num_bytes_left = len;
                 while (num_bytes_left > 0) {
@@ -188,7 +181,6 @@ int deepcgi_handler(request_rec *inpRequest) {
                     }
                     num_bytes_left -= num_bytes_written;
                 }
-//                fprintf(lg, "%s", replacement);
                 // write data after inserted data
                 num_bytes_left = num_bytes_read - num_bytes;
                 while (num_bytes_left > 0) {
@@ -200,9 +192,6 @@ int deepcgi_handler(request_rec *inpRequest) {
                     }
                     num_bytes_left -= num_bytes_written;
                 }
-//                for(int i = num_bytes; i < num_bytes_read; i++) {
-//                    fprintf(lg, "%c", line[i]);
-//                }
                 inserted = 1;
             }
             else {
@@ -216,7 +205,6 @@ int deepcgi_handler(request_rec *inpRequest) {
                     }
                     num_bytes_left -= num_bytes_written;
                 }
-//                fprintf(lg, "%s", line);
             }
         }
         else {
@@ -230,7 +218,6 @@ int deepcgi_handler(request_rec *inpRequest) {
                 }
                 num_bytes_left -= num_bytes_written;
             }
-//            fprintf(lg, "%s", line);
         }
     } while (num_bytes_read == HUGE_STRING_LEN);
 
@@ -238,7 +225,6 @@ int deepcgi_handler(request_rec *inpRequest) {
     ap_set_keepalive(inpRequest);
 
     pclose(fp);
-//    pclose(lg);
 
     return OK;
 }
