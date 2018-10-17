@@ -9,7 +9,6 @@
 #define MAX_RESOURCE 1001
 
 extern const char *replayserver_filename;
-static int resources_count = 0;
 
 static void deepcgi_hooks(apr_pool_t *inpPool);
 
@@ -18,7 +17,6 @@ static int deepcgi_handler(request_rec *inpRequest);
 typedef struct {
     const char *working_dir;
     const char *recording_dir;
-    const char *pushed_resources[MAX_RESOURCE];
 } deepcgi_config;
 
 static deepcgi_config config;
@@ -37,17 +35,21 @@ const char *deepcgi_set_recordingdir(cmd_parms *cmd, void *cfg, const char *arg)
     return NULL;
 }
 
-const char *deepcgi_set_pushresource(cmd_parms *cmd, void *cfg, const char *arg) {
-    config.pushed_resources[resources_count++] = arg;
-    return NULL;
-}
-
 char* set_push_headers(char* dest) {
+    char push_config_file[200] = "", resource[2000] = "";
+    strcat(push_config_file, config.working_dir);
+    strcat(push_config_file, "/");
+    strcat(push_config_file, config.recording_dir);
+    strcat(push_config_file, "push.txt");
     strcpy(dest, "");
-    for(int i = 0; i < resources_count; i++) {
-        strcat(dest, "Link: <");
-        strcat(dest, config.pushed_resources[i]);
-        strcat(dest, ">; rel=preload\r\n");
+    FILE* fp = fopen(push_config_file, "r");
+    if (fp != NULL) {
+        while(fscanf(fp, "%s", resource) != EOF) {
+            strcat(dest, "Link: <");
+            strcat(dest, resource);
+            strcat(dest, ">; rel=preload\r\n");
+        }
+        fclose(fp);
     }
     return dest;
 }
@@ -60,7 +62,6 @@ static const command_rec deepcgi_directives[] =
         {
                 AP_INIT_TAKE1("workingDir", deepcgi_set_workingdir, NULL, RSRC_CONF, "Working directory"),
                 AP_INIT_TAKE1("recordingDir", deepcgi_set_recordingdir, NULL, RSRC_CONF, "Recording directory"),
-                AP_INIT_TAKE1("pushedResource", deepcgi_set_pushresource, NULL, RSRC_CONF, "Resource used for server push"),
                 {NULL}
         };
 
