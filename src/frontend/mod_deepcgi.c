@@ -82,16 +82,6 @@ deepcgi_module =
 // Module handler function
 // ============================================================================
 
-
-char* rand_s(char* container, int len) {
-    char* alphabet = "QAZWSXEDCRFVTGBYHNUJMIKLOP1234567890", len_a = 36;
-    for (int i = 0; i < len; i++) {
-        container[i] = alphabet[rand() % len_a];
-    }
-    container[len] = '\0';
-    return container;
-}
-
 int deepcgi_handler(request_rec *inpRequest) {
     if (!inpRequest->handler || strcmp(inpRequest->handler, "deepcgi-handler")) {
         return DECLINED;
