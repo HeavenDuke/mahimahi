@@ -39,7 +39,6 @@ char* set_push_headers(char* dest) {
     char push_config_file[200] = "", resource[2000] = "";
     strcat(push_config_file, config.working_dir);
     strcat(push_config_file, "/");
-    strcat(push_config_file, config.recording_dir);
     strcat(push_config_file, "push.txt");
     strcpy(dest, "");
     FILE* fp = fopen(push_config_file, "r");
