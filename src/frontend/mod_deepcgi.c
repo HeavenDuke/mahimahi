@@ -6,8 +6,6 @@
 #include "http_core.h"
 #include "http_protocol.h"
 
-#define MAX_RESOURCE 1001
-
 extern const char *replayserver_filename;
 
 static void deepcgi_hooks(apr_pool_t *inpPool);
