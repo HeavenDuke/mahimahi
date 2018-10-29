@@ -127,7 +127,10 @@ int deepcgi_handler(request_rec *inpRequest) {
     struct ap_filter_t *cur, *start;
     char replacement[HUGE_STRING_LEN * 10] = "";
 
-    set_push_headers(replacement);
+    // Only Append Server Push Header to the response of root document
+    if (strcmp(request_uri, "/") == 0 && strcmp(request_method, "GET") == 0) {
+        set_push_headers(replacement);
+    }
 
     // Get rid of all filters up through protocol...since we
     // haven't parsed off the headers, there is no way they can
