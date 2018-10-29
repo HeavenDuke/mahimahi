@@ -6,6 +6,8 @@
 #include "http_core.h"
 #include "http_protocol.h"
 
+#define MAX_HEADER_LENGTH 100001
+
 extern const char *replayserver_filename;
 
 static void deepcgi_hooks(apr_pool_t *inpPool);
@@ -123,9 +125,8 @@ int deepcgi_handler(request_rec *inpRequest) {
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    char line[HUGE_STRING_LEN], buffer[HUGE_STRING_LEN * 10];
+    char line[HUGE_STRING_LEN], replacement[MAX_HEADER_LENGTH] = "";
     struct ap_filter_t *cur, *start;
-    char replacement[HUGE_STRING_LEN * 10] = "";
 
     // Only Append Server Push Header to the response of root document
     if (strcmp(request_uri, "/") == 0 && strcmp(request_method, "GET") == 0) {
