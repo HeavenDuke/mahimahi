@@ -6,7 +6,7 @@
 #include "http_core.h"
 #include "http_protocol.h"
 
-#define MAX_HEADER_LENGTH 100001
+#define MAX_HEADER_LENGTH 200001
 
 extern const char *replayserver_filename;
 
@@ -36,17 +36,24 @@ const char *deepcgi_set_recordingdir(cmd_parms *cmd, void *cfg, const char *arg)
 }
 
 char* set_push_headers(char* dest) {
-    char push_config_file[200] = "", resource[2000] = "";
+    char push_config_file[200] = "", resource[2000] = "", type[20] = "";
+    int push = 0;
     strcat(push_config_file, config.working_dir);
     strcat(push_config_file, "/");
     strcat(push_config_file, "push.txt");
     strcpy(dest, "");
     FILE* fp = fopen(push_config_file, "r");
     if (fp != NULL) {
-        while(fscanf(fp, "%s", resource) != EOF) {
+        while(fscanf(fp, "%s %d %s", resource, &push, type) != EOF) {
             strcat(dest, "Link: <");
             strcat(dest, resource);
-            strcat(dest, ">; rel=preload\r\n");
+            strcat(dest, ">; rel=preload");
+            if (push == 0) {
+                strcat(dest, "; as=");
+                strcat(dest, type);
+                strcat(dest, ";");
+            }
+            strcat(dest, "\r\n");
         }
         fclose(fp);
     }
